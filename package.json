@@ -1,0 +1,35 @@
+{
+  "name": "vite-plugin-generate-html",
+  "version": "0.1.0",
+  "description": "Plugin to generate <script> and <link> elements to predefined files to serve your application bundles.",
+  "license": "MIT",
+  "author": "Jari Ketolainen",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "version": "git add -A src"
+  },
+  "types": "dist/index.d.ts",
+  "devDependencies": {
+    "@types/node": "^18.11.9",
+    "rollup": "^3.4.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.3"
+  },
+  "keywords": [
+    "generate",
+    "html",
+    "link",
+    "rollup",
+    "rollup-plugin",
+    "script",
+    "template",
+    "vite",
+    "vite-plugin"
+  ],
+  "engines": {
+    "node": "^14.18.0 || >=16.0.0"
+  }
+}

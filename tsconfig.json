@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES5",
+    "module": "ES2015",
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "noUnusedLocals": true,
+    "outDir": "./dist",
+    "sourceMap": true,
+    "preserveConstEnums": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "types": ["node"],
+    "baseUrl": ".",
+    "declaration": true,
+    "declarationDir": "./dist"
+  },
+  "include": ["src/*", "*.d.ts"],
+  "exclude": ["node_modules"]
+}
