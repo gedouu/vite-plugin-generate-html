@@ -15,33 +15,33 @@ interface ViteChunkData extends OutputChunk {
 
 interface RollupPluginCreateHtmlFilesOptions {
   /**
-   * Public path for bundles
+   * Directory to serve as plain static assets.
    * @default "/dist/"
    */
-  bundlePublicPath?: string;
+  publicDir?: string;
 
   /**
-   * Path for a file JS bundle(s) is served from
+   * Entry point where JS bundle(s) is served from.
    */
-  jsFilename: string;
+  jsEntryFile: string;
 
   /**
-   * Path for a file CSS bundle(s) is served from
+   * Entry point where CSS bundle(s) is served from.
    */
-  cssFilename: string;
+  cssEntryFile: string;
 }
 
 function generateHtmlFiles({
-  bundlePublicPath = "/dist/",
-  jsFilename,
-  cssFilename,
+  publicDir = "/dist/",
+  jsEntryFile,
+  cssEntryFile,
 }: RollupPluginCreateHtmlFilesOptions): Plugin {
-  if (!jsFilename) {
-    throw new Error("jsFilename is required");
+  if (!jsEntryFile) {
+    throw new Error("jsEntryFile is required");
   }
 
-  if (!cssFilename) {
-    throw new Error("cssFilename is required");
+  if (!cssEntryFile) {
+    throw new Error("cssEntryFile is required");
   }
 
   return {
@@ -58,14 +58,14 @@ function generateHtmlFiles({
       try {
         const scripts = entryScripts
           .map((chunk) => {
-            return `<script type="module" src="${bundlePublicPath}${chunk.fileName}"></script>`;
+            return `<script type="module" src="${publicDir}${chunk.fileName}"></script>`;
           })
           .join("\n");
 
-        await fsPromises.writeFile(jsFilename, scripts);
+        await fsPromises.writeFile(jsEntryFile, scripts);
       } catch (e) {
         console.error(e);
-        throw new Error(`Writing scripts to ${jsFilename} failed`);
+        throw new Error(`Writing <script>-elements to ${jsEntryFile} failed`);
       }
 
       // Create link-tags
@@ -82,16 +82,16 @@ function generateHtmlFiles({
             return Array.from(cssSet)
               .map(
                 (fileName) =>
-                  `<link href="${bundlePublicPath}${fileName}" rel="stylesheet" media="all">`
+                  `<link href="${publicDir}${fileName}" rel="stylesheet" media="all">`
               )
               .join("\n");
           })
           .join("\n");
 
-        await fsPromises.writeFile(cssFilename, links);
+        await fsPromises.writeFile(cssEntryFile, links);
       } catch (e) {
         console.error(e);
-        throw new Error(`Writing cssFilename to ${cssFilename} failed`);
+        throw new Error(`Writing <link>-elements to ${cssEntryFile} failed`);
       }
     },
   };

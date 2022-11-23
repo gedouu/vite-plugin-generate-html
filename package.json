@@ -5,6 +5,7 @@
   "license": "MIT",
   "author": "Jari Ketolainen",
   "main": "dist/index.js",
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
@@ -12,6 +13,10 @@
     "version": "git add -A src"
   },
   "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gedouu/vite-plugin-generate-html.git"
+  },
   "devDependencies": {
     "@types/node": "^18.11.9",
     "rollup": "^3.4.0",
