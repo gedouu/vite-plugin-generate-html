@@ -21,20 +21,27 @@ interface RollupPluginCreateHtmlFilesOptions {
   publicDir?: string;
 
   /**
-   * Entry point where JS bundle(s) is served from.
+   * Entry point where JS bundles are served from.
    */
   jsEntryFile: string;
 
   /**
-   * Entry point where CSS bundle(s) is served from.
+   * Entry point where CSS bundles are served from.
    */
   cssEntryFile: string;
+
+  /**
+   * Attributes provided to the generated bundle script tag. Passed as an array of strings.
+   * @default ['type="module"']
+   */
+  attrs?: string[];
 }
 
 function generateHtmlFiles({
   publicDir = "/dist/",
   jsEntryFile,
   cssEntryFile,
+  attrs = ['type="module"'],
 }: RollupPluginCreateHtmlFilesOptions): Plugin {
   if (!jsEntryFile) {
     throw new Error("jsEntryFile is required");
@@ -43,6 +50,8 @@ function generateHtmlFiles({
   if (!cssEntryFile) {
     throw new Error("cssEntryFile is required");
   }
+
+  const scriptTagAttributes = attrs && attrs.length > 0 ? attrs : [];
 
   return {
     name: "vite-plugin-generate-html",
@@ -58,7 +67,9 @@ function generateHtmlFiles({
       try {
         const scripts = entryScripts
           .map((chunk) => {
-            return `<script type="module" src="${publicDir}${chunk.fileName}"></script>`;
+            return `<script ${scriptTagAttributes.join(" ")} src="${publicDir}${
+              chunk.fileName
+            }"></script>`;
           })
           .join("\n");
 
