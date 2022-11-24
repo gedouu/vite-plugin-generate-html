@@ -64,7 +64,7 @@ export default defineConfig({
   plugins: [
     generateHtmlFiles({
       publicDir: "/dist/",
-      jsEntryFile: pathResolve(__dirname, "../some/dir/for/javascript.html")
+      jsEntryFile: pathResolve(__dirname, "../some/dir/for/javascript.html"),
       cssEntryFile: pathResolve(__dirname, "../some/dir/for/css.html"),
       attrs: ['type="module"']
     }
