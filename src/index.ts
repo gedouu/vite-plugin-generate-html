@@ -3,7 +3,7 @@ import type {
   OutputBundle,
   OutputChunk,
   NormalizedOutputOptions,
-  Plugin,
+  Plugin
 } from "rollup";
 
 // viteMetadata has no typescript references
@@ -13,7 +13,7 @@ interface ViteChunkData extends OutputChunk {
   };
 }
 
-interface RollupPluginCreateHtmlFilesOptions {
+interface VitePluginGenerateHtmlOptions {
   /**
    * Directory to serve as plain static assets.
    * @default "/dist/"
@@ -31,10 +31,16 @@ interface RollupPluginCreateHtmlFilesOptions {
   cssEntryFile: string;
 
   /**
-   * Attributes provided to the generated bundle script tag. Passed as an array of strings.
+   * Attributes provided to the generated bundle script element. Passed as an array of strings.
    * @default ['type="module"']
    */
   attrs?: string[];
+
+  /**
+   * Attributes provided to the generated link element. Passed as an array of strings.
+   * @default ['media="all"']
+   */
+  linkAttrs?: string[];
 }
 
 function generateHtmlFiles({
@@ -42,7 +48,8 @@ function generateHtmlFiles({
   jsEntryFile,
   cssEntryFile,
   attrs = ['type="module"'],
-}: RollupPluginCreateHtmlFilesOptions): Plugin {
+  linkAttrs = ['media="all"']
+}: VitePluginGenerateHtmlOptions): Plugin {
   if (!jsEntryFile) {
     throw new Error("jsEntryFile is required");
   }
@@ -51,7 +58,9 @@ function generateHtmlFiles({
     throw new Error("cssEntryFile is required");
   }
 
-  const scriptTagAttributes = attrs && attrs.length > 0 ? attrs : [];
+  const scriptElementAttributes = attrs && attrs.length > 0 ? attrs : [];
+  const linkElementAttributes =
+    linkAttrs && linkAttrs.length > 0 ? linkAttrs : [];
 
   return {
     name: "vite-plugin-generate-html",
@@ -60,16 +69,16 @@ function generateHtmlFiles({
       bundle: OutputBundle
     ) {
       const entryScripts = Object.values(bundle).filter(
-        (chunk) => chunk.type === "chunk" && chunk.isEntry
+        chunk => chunk.type === "chunk" && chunk.isEntry
       ) as ViteChunkData[];
 
       // Create script-tags
       try {
         const scripts = entryScripts
-          .map((chunk) => {
-            return `<script ${scriptTagAttributes.join(" ")} src="${publicDir}${
-              chunk.fileName
-            }"></script>`;
+          .map(chunk => {
+            return `<script ${scriptElementAttributes.join(
+              " "
+            )} src="${publicDir}${chunk.fileName}"></script>`;
           })
           .join("\n");
 
@@ -82,18 +91,20 @@ function generateHtmlFiles({
       // Create link-tags
       try {
         const chunksWithImportedCss = entryScripts.filter(
-          (chunk) => chunk.viteMetadata.importedCss.size > 0
+          chunk => chunk.viteMetadata.importedCss.size > 0
         );
 
         if (chunksWithImportedCss.length <= 0) return;
 
         const links = chunksWithImportedCss
-          .map((data) => data.viteMetadata.importedCss)
-          .map((cssSet) => {
+          .map(data => data.viteMetadata.importedCss)
+          .map(cssSet => {
             return Array.from(cssSet)
               .map(
-                (fileName) =>
-                  `<link href="${publicDir}${fileName}" rel="stylesheet" media="all">`
+                fileName =>
+                  `<link href="${publicDir}${fileName}" rel="stylesheet" ${linkElementAttributes.join(
+                    " "
+                  )} />`
               )
               .join("\n");
           })
@@ -104,7 +115,7 @@ function generateHtmlFiles({
         console.error(e);
         throw new Error(`Writing <link>-elements to ${cssEntryFile} failed`);
       }
-    },
+    }
   };
 }
 
