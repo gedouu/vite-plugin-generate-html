@@ -10,7 +10,7 @@ Install the package from npm.
 npm install --save-dev vite-plugin-generate-html
 ```
 
-### Parameters
+### Parameters object
 
 ```ts
 {
@@ -31,16 +31,38 @@ npm install --save-dev vite-plugin-generate-html
   cssEntryFile: string;
 
   /**
-   * Attributes provided to the generated bundle script element. Passed as an array of strings.
-   * @default ['type="module"']
+   * Custom script and link element attributes for application's entry points. Entry point name must match those defined in configs.
+   * E.g. if your applications default main entry point is "main.ts" you must pass "main" as an entry point name for output.
+   * If output is left empty default attributes for script and link elements are used.
+   * Script element default attributes: ['type="module"']
+   * Link element default attributes: ['media="all"']
+   * @default = []
+   * @example
+   * output: [
+   *  {
+   *    main: {
+   *      attrs: ['type="module"', 'data-foo="bar"'],
+   *      linkAttrs: ['media="all"']
+   *    },
+   *    ....
+   *  }
+   * ]
    */
-  attrs?: string[];
+  output?: Array<
+    Record<string, {
+      {
+        /**
+         * Attributes provided to the generated bundle script element. Passed as an array of strings.
+         */
+        attrs: string[];
 
-  /**
-   * Attributes provided to the generated bundle link element. Passed as an array of strings.
-   * @default ['media="all"']
-   */
-  linkAttrs?: string[];
+        /**
+         * Attributes provided to the generated link element. Passed as an array of strings.
+         */
+        linkAttrs: string[];
+      }
+    }>
+  >;
 }
 ```
 
@@ -80,15 +102,13 @@ export default defineConfig({
     generateHtmlFiles({
       publicDir: "/dist/",
       jsEntryFile: pathResolve(__dirname, "../some/dir/for/javascript.html"),
-      cssEntryFile: pathResolve(__dirname, "../some/dir/for/css.html"),
-      attrs: ['type="module"'],
-      linkAttrs: ['media="all"']
+      cssEntryFile: pathResolve(__dirname, "../some/dir/for/css.html")
     }
   ]
 )}
 ```
 
-This will generate following files:
+This will generate following files (ending part after /dist/ may be different depending on other config settings in your app):
 
 `javascript.html`
 
@@ -99,7 +119,7 @@ This will generate following files:
 `css.html`
 
 ```html
-<link href="/dist/main.[hash].css" rel="stylesheet" media="all" />
+<link href="/dist/assets/main.[hash].css" rel="stylesheet" media="all" />
 ```
 
 > Note: plugin will override contents in the defined files.

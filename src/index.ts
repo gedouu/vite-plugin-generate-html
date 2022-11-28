@@ -13,6 +13,18 @@ interface ViteChunkData extends OutputChunk {
   };
 }
 
+interface OutputOptions {
+  /**
+   * Attributes provided to the generated bundle script element. Passed as an array of strings.
+   */
+  attrs: string[];
+
+  /**
+   * Attributes provided to the generated link element. Passed as an array of strings.
+   */
+  linkAttrs: string[];
+}
+
 interface VitePluginGenerateHtmlOptions {
   /**
    * Directory to serve as plain static assets.
@@ -31,36 +43,46 @@ interface VitePluginGenerateHtmlOptions {
   cssEntryFile: string;
 
   /**
-   * Attributes provided to the generated bundle script element. Passed as an array of strings.
-   * @default ['type="module"']
+   * Script and link element attributes provided per bundle's entry point. Entry point name must match those defined in configs.
+   * E.g. if your applications default main entry point is "main.ts" you must pass "main" as an entry point name for output.
+   * If output is left empty default attributes for script and link elements are used.
+   * Script element default attributes: ['type="module"']
+   * Link element default attributes: ['media="all"']
+   * @default = []
+   * @example
+   * output: [
+   *  {
+   *    main: {
+   *      attrs: ['type="module"', 'data-foo="bar"'],
+   *      linkAttrs: ['media="all"']
+   *    },
+   *    ....
+   *  }
+   * ]
    */
-  attrs?: string[];
-
-  /**
-   * Attributes provided to the generated link element. Passed as an array of strings.
-   * @default ['media="all"']
-   */
-  linkAttrs?: string[];
+  output?: Array<Record<string, OutputOptions>>;
 }
 
 function generateHtmlFiles({
   publicDir = "/dist/",
   jsEntryFile,
   cssEntryFile,
-  attrs = ['type="module"'],
-  linkAttrs = ['media="all"']
+  output = []
 }: VitePluginGenerateHtmlOptions): Plugin {
   if (!jsEntryFile) {
-    throw new Error("jsEntryFile is required");
+    throw new Error("Missing option - jsEntryFile is required");
   }
 
   if (!cssEntryFile) {
-    throw new Error("cssEntryFile is required");
+    throw new Error("Missing option - cssEntryFile is required");
   }
 
-  const scriptElementAttributes = attrs && attrs.length > 0 ? attrs : [];
-  const linkElementAttributes =
-    linkAttrs && linkAttrs.length > 0 ? linkAttrs : [];
+  if (!Array.isArray(output)) {
+    throw new Error("Output error - output must be type of array");
+  }
+
+  const defaultScriptElementAttributes = ['type="module"'];
+  const defaultLinkElementAttributes = ['media="all"'];
 
   return {
     name: "vite-plugin-generate-html",
@@ -72,10 +94,41 @@ function generateHtmlFiles({
         chunk => chunk.type === "chunk" && chunk.isEntry
       ) as ViteChunkData[];
 
+      if (entryScripts.length <= 0) {
+        throw new Error(
+          "Application entry point was not found. Please define at least one entry point for the application."
+        );
+      }
+
       // Create script-tags
       try {
         const scripts = entryScripts
           .map(chunk => {
+            // if output is not set return default attributes
+            if (output.length <= 0) {
+              return `<script ${defaultScriptElementAttributes.join(
+                " "
+              )} src="${publicDir}${chunk.fileName}"></script>`;
+            }
+
+            // check if output array contains correct entry point names
+            const matchingEntry = output.find((_, index) => {
+              return output[index][chunk.name];
+            });
+
+            if (!matchingEntry) {
+              throw new Error(
+                `Output error - Entry point "${chunk.name}" has no matching key in output entry points.`
+              );
+            }
+
+            const scriptElementAttributes = matchingEntry[chunk.name].attrs;
+            if (!Array.isArray(scriptElementAttributes)) {
+              throw new Error(
+                `Output error - output.${chunk.name}.attrs is not a valid array.`
+              );
+            }
+
             return `<script ${scriptElementAttributes.join(
               " "
             )} src="${publicDir}${chunk.fileName}"></script>`;
@@ -83,26 +136,42 @@ function generateHtmlFiles({
           .join("\n");
 
         await fsPromises.writeFile(jsEntryFile, scripts);
-      } catch (e) {
-        console.error(e);
-        throw new Error(`Writing <script>-elements to ${jsEntryFile} failed`);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          this.error(
+            `\n${error.message}\nWriting <script>-elements to ${jsEntryFile} failed\n`
+          );
+        }
+
+        this.error(`\nWriting <script>-elements to ${jsEntryFile} failed`);
       }
 
       // Create link-tags
       try {
-        const chunksWithImportedCss = entryScripts.filter(
-          chunk => chunk.viteMetadata.importedCss.size > 0
-        );
+        const links = entryScripts
+          .filter(chunk => chunk.viteMetadata.importedCss.size > 0)
+          .map(chunk => {
+            let linkAttrs = defaultLinkElementAttributes;
 
-        if (chunksWithImportedCss.length <= 0) return;
+            // check if output array contains correct entry point names
+            const matchingEntry = output.find((_, index) => {
+              return output[index][chunk.name];
+            });
 
-        const links = chunksWithImportedCss
-          .map(data => data.viteMetadata.importedCss)
-          .map(cssSet => {
-            return Array.from(cssSet)
+            if (matchingEntry) {
+              if (!Array.isArray(matchingEntry[chunk.name].linkAttrs)) {
+                throw new Error(
+                  `Output error - output.${chunk.name}.linkAttrs is not a valid array`
+                );
+              }
+
+              linkAttrs = matchingEntry[chunk.name].linkAttrs;
+            }
+
+            return Array.from(chunk.viteMetadata.importedCss)
               .map(
                 fileName =>
-                  `<link href="${publicDir}${fileName}" rel="stylesheet" ${linkElementAttributes.join(
+                  `<link href="${publicDir}${fileName}" rel="stylesheet" ${linkAttrs.join(
                     " "
                   )} />`
               )
@@ -111,9 +180,14 @@ function generateHtmlFiles({
           .join("\n");
 
         await fsPromises.writeFile(cssEntryFile, links);
-      } catch (e) {
-        console.error(e);
-        throw new Error(`Writing <link>-elements to ${cssEntryFile} failed`);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          throw new Error(
+            `\n${error.message}\nWriting <link>-elements to ${cssEntryFile} failed\n`
+          );
+        }
+
+        throw new Error(`\nWriting <link>-elements to ${cssEntryFile} failed`);
       }
     }
   };

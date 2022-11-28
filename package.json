@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-generate-html",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Plugin to generate <script> and <link> elements to predefined files to serve your application bundles.",
   "license": "MIT",
   "author": "Jari Ketolainen",
