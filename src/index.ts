@@ -13,18 +13,6 @@ interface ViteChunkData extends OutputChunk {
   };
 }
 
-interface OutputOptions {
-  /**
-   * Attributes provided to the generated bundle script element. Passed as an array of strings.
-   */
-  attrs: string[];
-
-  /**
-   * Attributes provided to the generated link element. Passed as an array of strings.
-   */
-  linkAttrs: string[];
-}
-
 interface VitePluginGenerateHtmlOptions {
   /**
    * Directory to serve as plain static assets.
@@ -44,7 +32,7 @@ interface VitePluginGenerateHtmlOptions {
 
   /**
    * Script and link element attributes provided per bundle's entry point. Entry point name must match those defined in configs.
-   * E.g. if your applications default main entry point is "main.ts" you must pass "main" as an entry point name for output.
+   * E.g. if your application's default main entry point is "main.ts" you must pass "main" as an entry point name for output.
    * If output is left empty default attributes for script and link elements are used.
    * Script element default attributes: ['type="module"']
    * Link element default attributes: ['media="all"']
@@ -60,7 +48,22 @@ interface VitePluginGenerateHtmlOptions {
    *  }
    * ]
    */
-  output?: Array<Record<string, OutputOptions>>;
+   output?: Array<
+    Record<
+      string,
+      {
+        /**
+         * Attributes provided to the generated bundle script element. Passed as an array of strings.
+         */
+        attrs: string[];
+
+        /**
+         * Attributes provided to the generated link element. Passed as an array of strings.
+         */
+        linkAttrs: string[];
+      }
+    >
+  >;
 }
 
 function generateHtmlFiles({
@@ -138,12 +141,12 @@ function generateHtmlFiles({
         await fsPromises.writeFile(jsEntryFile, scripts);
       } catch (error: unknown) {
         if (error instanceof Error) {
-          this.error(
+          throw new Error(
             `\n${error.message}\nWriting <script>-elements to ${jsEntryFile} failed\n`
           );
         }
 
-        this.error(`\nWriting <script>-elements to ${jsEntryFile} failed`);
+        throw new Error(`\nWriting <script>-elements to ${jsEntryFile} failed`);
       }
 
       // Create link-tags

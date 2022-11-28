@@ -32,7 +32,7 @@ npm install --save-dev vite-plugin-generate-html
 
   /**
    * Custom script and link element attributes for application's entry points. Entry point name must match those defined in configs.
-   * E.g. if your applications default main entry point is "main.ts" you must pass "main" as an entry point name for output.
+   * E.g. if your application's default main entry point is "main.ts" you must pass "main" as an entry point name for output.
    * If output is left empty default attributes for script and link elements are used.
    * Script element default attributes: ['type="module"']
    * Link element default attributes: ['media="all"']
@@ -48,8 +48,9 @@ npm install --save-dev vite-plugin-generate-html
    *  }
    * ]
    */
-  output?: Array<
-    Record<string, {
+   output?: Array<
+    Record<
+      string,
       {
         /**
          * Attributes provided to the generated bundle script element. Passed as an array of strings.
@@ -61,7 +62,7 @@ npm install --save-dev vite-plugin-generate-html
          */
         linkAttrs: string[];
       }
-    }>
+    >
   >;
 }
 ```
