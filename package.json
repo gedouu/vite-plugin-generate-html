@@ -24,15 +24,13 @@
     "typescript": "^4.9.3"
   },
   "keywords": [
-    "generate",
-    "html",
-    "link",
+    "generate-html",
+    "html-link",
+    "html-script",
     "rollup",
     "rollup-plugin",
-    "script",
-    "template",
-    "vite",
-    "vite-plugin"
+    "viteMetadata",
+    "generateBundle"
   ],
   "engines": {
     "node": "^14.18.0 || >=16.0.0"
