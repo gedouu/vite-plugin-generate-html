@@ -1,6 +1,6 @@
 ## Vite Plugin Generate HTML
 
-Generate `<script>` and `<link>` elements from entry files to serve Javascript and CSS bundles for your application.
+Define separate output files for JS and CSS bundles. Plugin will generate `<script>` and `<link>` elements from entry files and copy elements to defined output files.
 
 ## Install
 
