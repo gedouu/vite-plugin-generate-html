@@ -3,7 +3,7 @@ import type {
   OutputBundle,
   OutputChunk,
   NormalizedOutputOptions,
-  Plugin
+  Plugin,
 } from "rollup";
 
 // viteMetadata has no typescript references
@@ -21,21 +21,25 @@ interface VitePluginGenerateHtmlOptions {
   publicDir?: string;
 
   /**
-   * Entry point where JS bundles are served from.
+   * The file to write the generated script HTML to.
    */
   jsEntryFile: string;
 
   /**
-   * Entry point where CSS bundles are served from.
+   * The file to write the generated link HTML to.
    */
   cssEntryFile: string;
 
   /**
-   * Script and link element attributes provided per bundle's entry point. Entry point name must match those defined in configs.
+   * Custom script and link element attributes for application's entry points.
+   * Entry point name must match those defined in configs.
    * E.g. if your application's default main entry point is "main.ts" you must pass "main" as an entry point name for output.
+   *
+   * If output is used, you must define all entry points to it, unless you filter them by using the chunks-parameter.
    * If output is left empty default attributes for script and link elements are used.
    * Script element default attributes: ['type="module"']
    * Link element default attributes: ['media="all"']
+   *
    * @default = []
    * @example
    * output: [
@@ -48,29 +52,40 @@ interface VitePluginGenerateHtmlOptions {
    *  }
    * ]
    */
-   output?: Array<
+  output?: Array<
     Record<
       string,
       {
         /**
-         * Attributes provided to the generated bundle script element. Passed as an array of strings.
+         * Attributes provided for the generated bundle script element. Passed as an array of strings.
          */
         attrs: string[];
 
         /**
-         * Attributes provided to the generated link element. Passed as an array of strings.
+         * Attributes provided for the generated link element. Passed as an array of strings.
          */
         linkAttrs: string[];
       }
     >
   >;
+
+  /**
+   * By default the plugin will handle all chunks that are defined as entry points,
+   * but you can also limit it to handle only certain ones.
+   * This allows to reuse the plugin and define different output paths for some other entries.
+   * @default = []
+   * @example
+   * chunks: ["app", "otherEntry"]
+   */
+  chunks?: string[];
 }
 
 function generateHtmlFiles({
   publicDir = "/dist/",
   jsEntryFile,
   cssEntryFile,
-  output = []
+  output = [],
+  chunks = [],
 }: VitePluginGenerateHtmlOptions): Plugin {
   if (!jsEntryFile) {
     throw new Error("Missing option - jsEntryFile is required");
@@ -93,9 +108,19 @@ function generateHtmlFiles({
       _options: NormalizedOutputOptions,
       bundle: OutputBundle
     ) {
-      const entryScripts = Object.values(bundle).filter(
-        chunk => chunk.type === "chunk" && chunk.isEntry
-      ) as ViteChunkData[];
+      const entryScripts = Object.values(bundle)
+        .filter((chunk) => chunk.type === "chunk" && chunk.isEntry)
+        .filter((chunk) => {
+          if (chunks.length > 0) {
+            if (chunk.name && chunks.indexOf(chunk.name) !== -1) {
+              return true;
+            }
+
+            return false;
+          }
+
+          return true;
+        }) as ViteChunkData[];
 
       if (entryScripts.length <= 0) {
         throw new Error(
@@ -106,7 +131,7 @@ function generateHtmlFiles({
       // Create script-tags
       try {
         const scripts = entryScripts
-          .map(chunk => {
+          .map((chunk) => {
             // if output is not set return default attributes
             if (output.length <= 0) {
               return `<script ${defaultScriptElementAttributes.join(
@@ -152,8 +177,8 @@ function generateHtmlFiles({
       // Create link-tags
       try {
         const links = entryScripts
-          .filter(chunk => chunk.viteMetadata.importedCss.size > 0)
-          .map(chunk => {
+          .filter((chunk) => chunk.viteMetadata.importedCss.size > 0)
+          .map((chunk) => {
             let linkAttrs = defaultLinkElementAttributes;
 
             // check if output array contains correct entry point names
@@ -173,7 +198,7 @@ function generateHtmlFiles({
 
             return Array.from(chunk.viteMetadata.importedCss)
               .map(
-                fileName =>
+                (fileName) =>
                   `<link href="${publicDir}${fileName}" rel="stylesheet" ${linkAttrs.join(
                     " "
                   )} />`
@@ -192,7 +217,7 @@ function generateHtmlFiles({
 
         throw new Error(`\nWriting <link>-elements to ${cssEntryFile} failed`);
       }
-    }
+    },
   };
 }
 
