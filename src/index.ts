@@ -6,13 +6,14 @@ import type {
   Plugin,
 } from "rollup";
 
-// viteMetadata has no typescript references
+// Vite-specific metadata for chunks
 interface ViteChunkData extends OutputChunk {
   viteMetadata: {
     importedCss: Set<string>;
   };
 }
 
+// Plugin configuration options
 interface VitePluginGenerateHtmlOptions {
   /**
    * Directory to serve as plain static assets.
@@ -21,35 +22,33 @@ interface VitePluginGenerateHtmlOptions {
   publicDir?: string;
 
   /**
-   * The file to write the generated script HTML to.
+   * The file to write the generated `<script>` HTML to.
    */
   jsEntryFile: string;
 
   /**
-   * The file to write the generated link HTML to.
+   * The file to write the generated `<link>` HTML to.
    */
   cssEntryFile: string;
 
   /**
-   * Custom script and link element attributes for application's entry points.
-   * Entry point name must match those defined in configs.
-   * E.g. if your application's default main entry point is "main.ts" you must pass "main" as an entry point name for output.
+   * Custom attributes for `<script>` and `<link>` elements for specific entry points.
+   * Entry point names must match those defined in your Vite configuration.
    *
-   * If output is used, you must define all entry points to it, unless you filter them by using the chunks-parameter.
-   * If output is left empty default attributes for script and link elements are used.
-   * Script element default attributes: ['type="module"']
-   * Link element default attributes: ['media="all"']
+   * If `output` is used, all entry points must be defined unless filtered using the `chunks` parameter.
+   * Default attributes:
+   * - `<script>`: `['type="module"']`
+   * - `<link>`: `['media="all"']`
    *
-   * @default = []
+   * @default []
    * @example
    * output: [
-   *  {
-   *    main: {
-   *      attrs: ['type="module"', 'data-foo="bar"'],
-   *      linkAttrs: ['media="all"']
-   *    },
-   *    ....
-   *  }
+   *   {
+   *     main: {
+   *       attrs: ['type="module"', 'data-foo="bar"'],
+   *       linkAttrs: ['media="all"']
+   *     }
+   *   }
    * ]
    */
   output?: Array<
@@ -57,12 +56,12 @@ interface VitePluginGenerateHtmlOptions {
       string,
       {
         /**
-         * Attributes provided for the generated bundle script element. Passed as an array of strings.
+         * Attributes for the generated `<script>` element.
          */
         attrs: string[];
 
         /**
-         * Attributes provided for the generated link element. Passed as an array of strings.
+         * Attributes for the generated `<link>` element.
          */
         linkAttrs: string[];
       }
@@ -70,10 +69,10 @@ interface VitePluginGenerateHtmlOptions {
   >;
 
   /**
-   * By default the plugin will handle all chunks that are defined as entry points,
-   * but you can also limit it to handle only certain ones.
-   * This allows to reuse the plugin and define different output paths for some other entries.
-   * @default = []
+   * Limit the plugin to handle only specific entry points.
+   * By default, all entry points are handled.
+   *
+   * @default []
    * @example
    * chunks: ["app", "otherEntry"]
    */
@@ -88,15 +87,15 @@ function generateHtmlFiles({
   chunks = [],
 }: VitePluginGenerateHtmlOptions): Plugin {
   if (!jsEntryFile) {
-    throw new Error("Missing option - jsEntryFile is required");
+    throw new Error("Configuration error: 'jsEntryFile' is required.");
   }
 
   if (!cssEntryFile) {
-    throw new Error("Missing option - cssEntryFile is required");
+    throw new Error("Configuration error: 'cssEntryFile' is required.");
   }
 
   if (!Array.isArray(output)) {
-    throw new Error("Output error - output must be type of array");
+    throw new Error("Configuration error: 'output' must be an array.");
   }
 
   const defaultScriptElementAttributes = ['type="module"'];
@@ -108,52 +107,46 @@ function generateHtmlFiles({
       _options: NormalizedOutputOptions,
       bundle: OutputBundle
     ) {
+      // Filter entry scripts based on the provided chunks or include all by default
       const entryScripts = Object.values(bundle)
         .filter((chunk) => chunk.type === "chunk" && chunk.isEntry)
         .filter((chunk) => {
           if (chunks.length > 0) {
-            if (chunk.name && chunks.indexOf(chunk.name) !== -1) {
-              return true;
-            }
-
-            return false;
+            return chunk.name && chunks.includes(chunk.name);
           }
-
           return true;
         }) as ViteChunkData[];
 
-      if (entryScripts.length <= 0) {
+      if (entryScripts.length === 0) {
         throw new Error(
-          "Application entry point was not found. Please define at least one entry point for the application."
+          "No application entry points found. Please define at least one entry point in your Vite configuration."
         );
       }
 
-      // Create script-tags
+      // Generate <script> tags
       try {
         const scripts = entryScripts
           .map((chunk) => {
-            // if output is not set return default attributes
-            if (output.length <= 0) {
+            // Use default attributes if no output configuration is provided
+            if (output.length === 0) {
               return `<script ${defaultScriptElementAttributes.join(
                 " "
               )} src="${publicDir}${chunk.fileName}"></script>`;
             }
 
-            // check if output array contains correct entry point names
-            const matchingEntry = output.find((_, index) => {
-              return output[index][chunk.name];
-            });
+            // Find matching entry in the output configuration
+            const matchingEntry = output.find((entry) => entry[chunk.name]);
 
             if (!matchingEntry) {
               throw new Error(
-                `Output error - Entry point "${chunk.name}" has no matching key in output entry points.`
+                `Output configuration error: No matching key found for entry point "${chunk.name}".`
               );
             }
 
             const scriptElementAttributes = matchingEntry[chunk.name].attrs;
             if (!Array.isArray(scriptElementAttributes)) {
               throw new Error(
-                `Output error - output.${chunk.name}.attrs is not a valid array.`
+                `Output configuration error: 'attrs' for entry point "${chunk.name}" must be an array.`
               );
             }
 
@@ -167,29 +160,28 @@ function generateHtmlFiles({
       } catch (error: unknown) {
         if (error instanceof Error) {
           throw new Error(
-            `\n${error.message}\nWriting <script>-elements to ${jsEntryFile} failed\n`
+            `Failed to write <script> elements to '${jsEntryFile}': ${error.message}`
           );
         }
-
-        throw new Error(`\nWriting <script>-elements to ${jsEntryFile} failed`);
+        throw new Error(
+          `Failed to write <script> elements to '${jsEntryFile}'.`
+        );
       }
 
-      // Create link-tags
+      // Generate <link> tags
       try {
         const links = entryScripts
           .filter((chunk) => chunk.viteMetadata.importedCss.size > 0)
           .map((chunk) => {
             let linkAttrs = defaultLinkElementAttributes;
 
-            // check if output array contains correct entry point names
-            const matchingEntry = output.find((_, index) => {
-              return output[index][chunk.name];
-            });
+            // Find matching entry in the output configuration
+            const matchingEntry = output.find((entry) => entry[chunk.name]);
 
             if (matchingEntry) {
               if (!Array.isArray(matchingEntry[chunk.name].linkAttrs)) {
                 throw new Error(
-                  `Output error - output.${chunk.name}.linkAttrs is not a valid array`
+                  `Output configuration error: 'linkAttrs' for entry point "${chunk.name}" must be an array.`
                 );
               }
 
@@ -211,11 +203,12 @@ function generateHtmlFiles({
       } catch (error: unknown) {
         if (error instanceof Error) {
           throw new Error(
-            `\n${error.message}\nWriting <link>-elements to ${cssEntryFile} failed\n`
+            `Failed to write <link> elements to '${cssEntryFile}': ${error.message}`
           );
         }
-
-        throw new Error(`\nWriting <link>-elements to ${cssEntryFile} failed`);
+        throw new Error(
+          `Failed to write <link> elements to '${cssEntryFile}'.`
+        );
       }
     },
   };
