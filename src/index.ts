@@ -38,7 +38,7 @@ interface VitePluginGenerateHtmlOptions {
    * If `output` is used, all entry points must be defined unless filtered using the `chunks` parameter.
    * Default attributes:
    * - `<script>`: `['type="module"']`
-   * - `<link>`: `['media="all"']`
+   * - `<link>`: `['rel="stylesheet"', 'media="all"']`
    *
    * @default []
    * @example
@@ -46,7 +46,7 @@ interface VitePluginGenerateHtmlOptions {
    *   {
    *     main: {
    *       attrs: ['type="module"', 'data-foo="bar"'],
-   *       linkAttrs: ['media="all"']
+   *       linkAttrs: ['rel="stylesheet"', 'media="all"']
    *     }
    *   }
    * ]
@@ -99,7 +99,7 @@ function generateHtmlFiles({
   }
 
   const defaultScriptElementAttributes = ['type="module"'];
-  const defaultLinkElementAttributes = ['media="all"'];
+  const defaultLinkElementAttributes = ['rel="stylesheet"', 'media="all"'];
 
   return {
     name: "vite-plugin-generate-html",
@@ -191,7 +191,7 @@ function generateHtmlFiles({
             return Array.from(chunk.viteMetadata.importedCss)
               .map(
                 (fileName) =>
-                  `<link href="${publicDir}${fileName}" rel="stylesheet" ${linkAttrs.join(
+                  `<link href="${publicDir}${fileName}" ${linkAttrs.join(
                     " "
                   )} />`
               )

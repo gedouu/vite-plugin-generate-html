@@ -39,10 +39,10 @@
   },
   "homepage": "https://github.com/gedouu/vite-plugin-generate-html#readme",
   "devDependencies": {
-    "@types/node": "^22.14.1",
-    "rollup": "^4.40.0",
+    "@types/node": "^24.3.0",
+    "rollup": "^4.46.4",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.2"
   },
   "keywords": [
     "vite-plugin",
