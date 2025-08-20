@@ -51,7 +51,7 @@ The plugin accepts the following configuration options:
    * - If `output` is used, all entry points must be defined unless filtered using the `chunks` parameter.
    * - Default attributes:
    *   - `<script>`: `['type="module"']`
-   *   - `<link>`: `['media="all"']`
+   *   - `<link>`: `['rel="stylesheet"', 'media="all"']`
    *
    * @default []
    * @example
@@ -59,7 +59,7 @@ The plugin accepts the following configuration options:
    *   {
    *     main: {
    *       attrs: ['type="module"', 'data-foo="bar"'],
-   *       linkAttrs: ['media="all"']
+   *       linkAttrs: ['rel="stylesheet"', 'media="all"']
    *     }
    *   }
    * ]
@@ -147,7 +147,7 @@ export default defineConfig({
     //     {
     //       otherEntry: {
     //         attrs: ['type="module"', 'data-foo="bar"'],
-    //         linkAttrs: ['media="all"'],
+    //         linkAttrs: ['rel="stylesheet"', 'media="all"'],
     //       },
     //     },
     //   ],
@@ -188,7 +188,7 @@ output: [
   {
     main: {
       attrs: ['type="module"', 'data-foo="bar"'],
-      linkAttrs: ['media="all"'],
+      linkAttrs: ['rel="stylesheet"', 'media="all"'],
     },
   },
 ];
