@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-generate-html",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "A Vite plugin to generate separate output files for JavaScript and CSS bundles with customizable attributes.",
   "license": "MIT",
   "author": {
